@@ -1,72 +1,112 @@
 # Security Policy
 
-HDEX Q1 is built with security as a core product guarantee—not as an optional feature.
+HDEX Q1 is designed with security as a foundational guarantee—not as an optional capability.
 
-The runtime is designed to provide secure, deterministic, offline-capable execution for sensitive workloads while enforcing strict policy controls and generating verifiable audit evidence.
+The runtime provides **secure, deterministic, offline-capable execution** for sensitive workloads while enforcing strict policy controls and producing verifiable audit evidence. Every component is designed around a **default-deny**, **fail-closed**, and **least-privilege** security model.
 
 ---
 
 # Supported Versions
 
-| Version | Support Status |
-|----------|----------------|
-| `main` | ✅ Active development & security updates |
-| Latest pre-release | ✅ Supported |
-| Older commits & experimental branches | ❌ Not supported |
+The HDEX project provides security updates only for actively maintained versions.
+
+| Version               | Status                                  |
+| --------------------- | --------------------------------------- |
+| `main`                | ✅ Active development & security updates |
+| Latest pre-release    | ✅ Supported                             |
+| Older commits         | ❌ Unsupported                           |
+| Experimental branches | ❌ Unsupported                           |
+
+Security issues affecting unsupported versions may not receive fixes.
 
 ---
 
-# Security Principles
+# Security Philosophy
 
-HDEX Q1 is built around four primary guarantees:
+HDEX Q1 is built around a simple principle:
 
-- 🔐 Secure execution
-- ♻️ Deterministic execution
-- 📦 Offline operation
-- 📋 Auditable execution
+> **If the runtime cannot prove that an operation is authorized, deterministic, and auditable, it must deny the operation.**
 
-The runtime follows a **fail-closed** security model.
-
-If HDEX Q1 cannot verify that an operation is safe, authorized, and policy-compliant, it will deny the operation.
+Security is based on **verification rather than trust**. Every execution must be validated before, during, and after runtime.
 
 ---
 
-# Core Security Invariants
+# Core Security Guarantees
 
-The following guarantees must never be weakened.
+HDEX Q1 provides four foundational guarantees:
 
-- Jobs are untrusted by default.
-- Workers are treated as untrusted until verified.
-- Filesystem access is denied unless explicitly allowed.
-- Network access is denied unless explicitly allowed.
-- Policies fail closed.
-- Shell execution is disabled by default.
-- Local APIs always require authentication.
-- Secrets are never written to logs.
-- Audit logs must remain tamper-evident.
-- Suspicious outputs are quarantined.
-- Resource limits are enforced before execution.
-- Offline mode must never contact external services.
+* 🔐 **Secure Execution**
+* ♻️ **Deterministic Execution**
+* 📦 **Offline Operation**
+* 📋 **Auditable Execution**
+
+These guarantees define the behavior of the runtime and must never be weakened.
+
+---
+
+# Security Constitution
+
+The following security invariants are fundamental to HDEX Q1 and must never be violated.
+
+1. Jobs are untrusted by default.
+2. Workers remain untrusted until verified.
+3. Policies fail closed.
+4. Filesystem access is denied unless explicitly allowed.
+5. Network access is denied unless explicitly allowed.
+6. Shell execution is disabled by default.
+7. Local APIs always require authentication.
+8. Secrets must never appear in logs.
+9. Audit records must remain tamper-evident.
+10. Suspicious outputs must be quarantined.
+11. Resource limits must be enforced before execution.
+12. Offline mode must never communicate with external services.
+13. Runtime integrity must always be verified before execution.
+
+Every security-sensitive feature added to HDEX Q1 must preserve these guarantees.
+
+---
+
+# Fail-Closed Design
+
+HDEX Q1 follows a strict **fail-closed** model.
+
+If the runtime cannot verify that an action is safe, authorized, authenticated, or policy compliant, the action is denied.
+
+Examples include:
+
+| Condition                      | Runtime Behavior |
+| ------------------------------ | ---------------- |
+| Missing policy                 | Deny execution   |
+| Invalid signature              | Deny execution   |
+| Unknown worker                 | Deny execution   |
+| Unauthorized filesystem access | Deny access      |
+| Ambiguous network rule         | Deny connection  |
+| Verification failure           | Stop execution   |
+
+Security decisions are never based on assumptions.
 
 ---
 
 # Threat Model
 
-HDEX Q1 is designed to defend against:
+HDEX Q1 is designed to defend against the following threat classes.
 
-| Threat | Protection |
-|---------|------------|
-| Unauthorized filesystem access | Explicit mount restrictions |
-| Sandbox escape | Process, filesystem and resource isolation |
-| Malicious workers | Worker verification and policy enforcement |
-| Policy tampering | Signature verification |
-| Job tampering | Job hashing and signature validation |
-| Dependency poisoning | Lockfile and integrity verification |
-| Secret leakage | Environment scrubbing and redaction |
-| Command injection | No-shell execution |
-| Resource exhaustion | CPU, memory and process limits |
-| Audit tampering | Tamper-evident audit chain |
-| Offline bypass | Offline verification tests |
+| Threat                         | Protection                                 |
+| ------------------------------ | ------------------------------------------ |
+| Unauthorized filesystem access | Explicit mount restrictions                |
+| Directory traversal            | Canonical path validation                  |
+| Symlink and hardlink escape    | Filesystem verification                    |
+| Sandbox escape                 | Process and filesystem isolation           |
+| Malicious workers              | Worker verification and policy enforcement |
+| Policy tampering               | Signature verification                     |
+| Job tampering                  | Job hashing and signature validation       |
+| Dependency poisoning           | Lockfile and integrity verification        |
+| Command injection              | No-shell execution                         |
+| Secret leakage                 | Environment scrubbing and log redaction    |
+| Unauthorized local API access  | Authentication and authorization           |
+| Resource exhaustion            | CPU, memory, process, and disk limits      |
+| Audit tampering                | Tamper-evident audit chain                 |
+| Offline bypass                 | Offline verification tests                 |
 
 ---
 
@@ -74,34 +114,56 @@ HDEX Q1 is designed to defend against:
 
 The trusted runtime is intentionally small.
 
+```text
+                  HDEX Q1 Runtime
+                         │
+      ┌──────────────────┼──────────────────┐
+      │                  │                  │
+ Policy Engine     Secure Sandbox     Audit Layer
+      │                  │                  │
+      └──────────────────┼──────────────────┘
+                         │
+                Worker Execution
 ```
-            HDEX Q1 Runtime
-                   │
-      ┌────────────┼────────────┐
-      │            │            │
- Policy Engine  Secure Sandbox  Audit Layer
-      │            │            │
-      └────────────┼────────────┘
-                   │
-           Worker Execution
-```
+
+The trusted runtime controls policy enforcement, sandbox creation, deterministic execution, auditing, and artifact verification.
 
 ---
 
 # Trust Boundaries
 
-| Component | Trust Level |
-|-----------|-------------|
-| Runtime Core | Trusted |
-| Policy Engine | Trusted |
-| Sandbox | Trusted |
-| Audit System | Trusted |
-| Submitted Jobs | Untrusted |
-| Workers | Semi-trusted |
-| Worker Inputs | Untrusted |
-| Worker Outputs | Untrusted until verified |
+Every component is assigned an explicit trust level.
+
+| Component         | Trust Level                   |
+| ----------------- | ----------------------------- |
+| Runtime Core      | Trusted                       |
+| Policy Engine     | Trusted                       |
+| Secure Sandbox    | Trusted                       |
+| Audit System      | Trusted                       |
+| Submitted Jobs    | Untrusted                     |
+| Workers           | Semi-trusted                  |
+| Worker Inputs     | Untrusted                     |
+| Worker Outputs    | Untrusted until verified      |
 | Local API Clients | Untrusted until authenticated |
-| Artifacts | Untrusted until verified |
+| Artifacts         | Untrusted until verified      |
+
+Trust is earned through verification—not assumed.
+
+---
+
+# Secure Runtime Principles
+
+The runtime follows several mandatory engineering principles.
+
+* Default-deny security
+* Least-privilege execution
+* Explicit authorization
+* Defense in depth
+* Zero implicit trust
+* Deterministic behavior
+* Tamper-evident auditing
+* Minimal trusted computing base
+* Offline-first operation
 
 ---
 
@@ -109,113 +171,116 @@ The trusted runtime is intentionally small.
 
 Please **do not disclose security vulnerabilities publicly**.
 
-Avoid using:
+Do not use:
 
-- Public Issues
-- Pull Requests
-- Discussions
-- Social Media
+* Public Issues
+* Pull Requests
+* Discussions
+* Social Media
 
-Instead, use GitHub's **Private Vulnerability Reporting** when available.
+Instead, use GitHub's **Private Vulnerability Reporting** whenever available.
 
 Please include:
 
-- HDEX Q1 version
-- Commit hash
-- Operating system
-- Reproduction steps
-- Expected behavior
-- Actual behavior
-- Security impact
-- Proof of concept (if applicable)
+* HDEX version
+* Commit hash
+* Operating system
+* Reproduction steps
+* Expected behavior
+* Actual behavior
+* Security impact assessment
+* Proof of concept (if applicable)
 
-Never include:
+Do **not** include:
 
-- Private keys
-- Production secrets
-- Customer data
-- Access tokens
-- Sensitive credentials
+* Private keys
+* Customer data
+* Production secrets
+* Access tokens
+* Credentials
 
 ---
 
 # Vulnerability Severity
 
-| Severity | Examples |
-|----------|----------|
+| Severity | Examples                                                |
+| -------- | ------------------------------------------------------- |
 | Critical | Sandbox escape, arbitrary code execution, policy bypass |
-| High | Unauthorized filesystem access, audit bypass, authentication bypass |
-| Medium | Resource limit bypass, deterministic replay issues |
-| Low | Hardening improvements or documentation issues |
+| High     | Authentication bypass, filesystem escape, audit bypass  |
+| Medium   | Resource enforcement bypass, replay inconsistencies     |
+| Low      | Hardening improvements, documentation corrections       |
 
 ---
 
-# In Scope
+# Security Scope
 
-The following classes of vulnerabilities are considered security issues:
+## In Scope
+
+The following are considered security vulnerabilities.
 
 ### Sandbox Security
 
-- Filesystem escape
-- Symlink traversal
-- Hardlink bypass
-- Command injection
-- Unauthorized process execution
-- Resource limit bypass
+* Filesystem escape
+* Directory traversal
+* Symlink escape
+* Hardlink bypass
+* Command injection
+* Unauthorized process execution
+* Resource limit bypass
 
 ### Policy Enforcement
 
-- Policy bypass
-- Fail-open behavior
-- Signature verification failures
-- Authorization issues
+* Policy bypass
+* Fail-open behavior
+* Signature verification failures
+* Authorization flaws
 
 ### Worker Security
 
-- Unsigned worker execution
-- Worker permission bypass
-- Output validation failures
+* Unsigned worker execution
+* Worker permission bypass
+* Output validation failures
 
 ### Audit Integrity
 
-- Audit log tampering
-- Manifest integrity failures
-- Artifact verification failures
+* Audit log tampering
+* Manifest integrity failures
+* Artifact verification failures
 
 ### Offline Security
 
-- Telemetry
-- Network activity in offline mode
-- Runtime downloads
-- Supply-chain verification failures
+* Telemetry
+* Hidden network activity
+* Runtime downloads
+* Supply-chain verification failures
 
 ---
 
-# Out of Scope
+## Out of Scope
 
-The following are generally not considered security vulnerabilities:
+The following are generally **not** considered security vulnerabilities.
 
-- UI improvements
-- Documentation typos
-- Unsupported forks
-- Obsolete releases
-- Physical attacks
-- Social engineering
-- Performance-only issues without security impact
+* Documentation improvements
+* UI enhancements
+* Unsupported releases
+* Obsolete versions
+* Physical attacks
+* Social engineering
+* Performance-only issues without security impact
 
 ---
 
 # Secure Development Requirements
 
-Every security-sensitive component should follow these principles.
+All security-sensitive components must follow these requirements.
 
-- Fail closed.
-- Validate all external input.
-- Prefer allowlists over denylists.
-- Avoid implicit trust.
-- Avoid hidden network behavior.
-- Keep the trusted computing base small.
-- Produce deterministic behavior.
+* Fail closed.
+* Validate every external input.
+* Prefer allowlists over denylists.
+* Avoid implicit trust.
+* Avoid hidden network behavior.
+* Keep the trusted computing base minimal.
+* Produce deterministic execution.
 
 ---
 
@@ -223,13 +288,13 @@ Every security-sensitive component should follow these principles.
 
 Production Rust code should:
 
-- Forbid `unsafe` code.
-- Avoid `unwrap()`
-- Avoid `expect()`
-- Avoid `panic!()`
-- Return explicit errors.
-- Validate all external input.
-- Prevent secret leakage through logs.
+* Forbid `unsafe` code
+* Avoid `unwrap()`
+* Avoid `expect()`
+* Avoid `panic!()`
+* Return explicit errors
+* Validate external input
+* Prevent secret leakage through logs
 
 ---
 
@@ -237,26 +302,27 @@ Production Rust code should:
 
 Workers must:
 
-- Declare required permissions.
-- Run without shell execution.
-- Avoid hidden network access.
-- Produce structured outputs.
-- Never log secrets.
-- Respect deterministic execution requirements.
+* Declare required permissions.
+* Run without shell execution.
+* Avoid hidden network access.
+* Produce structured outputs.
+* Never log secrets.
+* Respect deterministic execution requirements.
+* Follow the worker security contract.
 
 ---
 
 # Filesystem Security
 
-HDEX Q1 protects against:
+The runtime protects against:
 
-- Directory traversal
-- Symlink escape
-- Hardlink escape
-- Mount escape
-- Output overwrite attacks
+* Directory traversal
+* Symlink escape
+* Hardlink escape
+* Mount escape
+* Output overwrite attacks
 
-Every filesystem operation is validated before execution.
+Every filesystem request is validated before execution.
 
 ---
 
@@ -264,13 +330,13 @@ Every filesystem operation is validated before execution.
 
 Workers execute without shell expansion.
 
-Allowed pattern:
+### Allowed
 
 ```text
 python3 worker.py --input request.json
 ```
 
-Disallowed:
+### Not Allowed
 
 ```text
 sh -c "..."
@@ -288,10 +354,10 @@ Workers do not inherit the host environment.
 
 The runtime:
 
-- Builds a minimal environment.
-- Removes dangerous variables.
-- Protects secrets.
-- Redacts sensitive values from logs.
+* Creates a minimal environment.
+* Removes dangerous inherited variables.
+* Protects secrets.
+* Redacts sensitive values from logs.
 
 ---
 
@@ -301,43 +367,43 @@ Network access is denied by default.
 
 Offline mode guarantees:
 
-- No DNS
-- No telemetry
-- No update checks
-- No package downloads
-- No hidden HTTP requests
+* No DNS
+* No telemetry
+* No update checks
+* No package downloads
+* No hidden HTTP requests
 
-Any allowed network access must be explicitly defined by policy and recorded in the audit log.
+Any permitted network access must be explicitly authorized by policy and recorded in the audit log.
 
 ---
 
 # Signing & Integrity
 
-Hardened deployments should verify signatures for:
+Production deployments should verify signatures for:
 
-- Release bundles
-- Policies
-- Jobs
-- Workers
-- Offline updates
+* Release bundles
+* Policies
+* Jobs
+* Workers
+* Offline updates
 
-Modified or unsigned content is rejected.
+Unsigned or modified content is rejected.
 
 ---
 
 # Audit Requirements
 
-Security-relevant events should include:
+Security-relevant events include:
 
-- Job validation
-- Policy evaluation
-- Worker verification
-- Sandbox creation
-- Execution lifecycle
-- Artifact generation
-- Quarantine actions
-- Security test results
-- Offline verification
+* Job validation
+* Policy evaluation
+* Worker verification
+* Sandbox creation
+* Execution lifecycle
+* Artifact generation
+* Quarantine actions
+* Security test results
+* Offline verification
 
 Audit records must remain tamper-evident.
 
@@ -345,55 +411,64 @@ Audit records must remain tamper-evident.
 
 # Required Security Tests
 
-Every security-sensitive change should maintain regression coverage for:
+Security-sensitive changes must maintain regression coverage for:
 
-- Policy enforcement
-- Filesystem isolation
-- Network isolation
-- Worker verification
-- Audit integrity
-- Deterministic replay
-- Offline execution
-- Resource enforcement
-- Secret redaction
+* Policy enforcement
+* Filesystem isolation
+* Network isolation
+* Worker verification
+* Audit integrity
+* Deterministic replay
+* Offline execution
+* Resource enforcement
+* Secret redaction
 
-All security tests should run offline.
+Security tests should execute entirely offline.
 
 ---
 
 # Operational Recommendations
 
-For production deployments:
+Production deployments should:
 
-- Enable hardened mode.
-- Enable offline mode whenever possible.
-- Require signed policies.
-- Require signed workers.
-- Use default-deny security.
-- Enable audit verification.
-- Enable artifact quarantine.
-- Verify release signatures.
-- Run security self-tests.
-- Run offline self-tests.
+* Enable hardened mode.
+* Enable offline mode whenever possible.
+* Require signed policies.
+* Require signed workers.
+* Use default-deny security.
+* Enable audit verification.
+* Enable artifact quarantine.
+* Verify release signatures.
+* Run security self-tests.
+* Run offline verification tests.
 
 ---
 
 # Maintainer Responsibilities
 
-Project maintainers should:
+Maintainers are responsible for:
 
-- Preserve secure defaults.
-- Reject fail-open behavior.
-- Review security-sensitive changes carefully.
-- Keep the trusted computing base minimal.
-- Protect vulnerability reports.
-- Coordinate responsible disclosure.
-- Maintain security documentation.
+* Preserving secure defaults.
+* Rejecting fail-open behavior.
+* Reviewing security-sensitive changes carefully.
+* Keeping the trusted computing base minimal.
+* Protecting vulnerability reports.
+* Coordinating responsible disclosure.
+* Maintaining accurate security documentation.
 
 ---
 
-# Security Philosophy
+# Security Commitment
 
-HDEX Q1 is designed around a simple principle:
+Security is not measured by the number of features but by the strength of the guarantees.
 
-> **If the runtime cannot prove that an operation is authorized, deterministic, and auditable, it must deny the operation.**
+HDEX Q1 is designed so that every execution is:
+
+* **Authorized**
+* **Verified**
+* **Deterministic**
+* **Offline-capable**
+* **Auditable**
+* **Tamper-evident**
+
+> **If HDEX Q1 cannot verify that an operation is authorized, deterministic, policy-compliant, and auditable, the runtime will deny the operation by design.**
