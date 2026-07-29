@@ -6,6 +6,11 @@ HDEX Q1 is a secure, deterministic, and offline execution runtime designed for h
 It enables organizations to execute sensitive jobs with strong security controls, reproducible execution, and verifiable audit evidence.
 
 ---
+<p align="center">
+  <img src="docs/images/HDEX%20Q1%20getting%20started.png"
+       alt="HDEX Q1 Getting Started"
+       width="100%">
+</p>
 
 ## Why HDEX Q1?
 
